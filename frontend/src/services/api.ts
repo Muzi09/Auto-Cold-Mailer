@@ -5,12 +5,13 @@ const API_BASE = '/api';
 export const api = {
   connectLLM: async (
     provider: string,
-    apiKey: string
-  ): Promise<{ success: boolean; provider?: string; defaultModel?: string; models?: string[]; error?: string }> => {
+    apiKey: string,
+    model: string
+  ): Promise<{ success: boolean; provider?: string; error?: string }> => {
     const res = await fetch(`${API_BASE}/llm/connect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, apiKey })
+      body: JSON.stringify({ provider, apiKey, model })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: 'Unable to connect' }));

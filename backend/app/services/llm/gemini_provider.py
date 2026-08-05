@@ -1,7 +1,7 @@
 import json
 import logging
 import httpx
-from typing import List, Tuple, Optional
+from typing import Optional, Tuple
 from app.services.llm.base_provider import BaseLLMProvider
 
 logger = logging.getLogger("auto_cold_mailer")
@@ -10,39 +10,33 @@ class GeminiProvider(BaseLLMProvider):
     def __init__(self, api_key: str, model: Optional[str] = None):
         super().__init__(api_key, model or "gemini-1.5-flash")
         self.default_model = "gemini-1.5-flash"
-        self.fallback_models = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro"
-        ]
 
-    async def validate_connection(self) -> Tuple[bool, str, List[str], str]:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={self.api_key}"
+    async def validate_connection(self) -> Tuple[bool, str]:
+        model_name = self.model or self.default_model
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": "ping"}]}],
+            "generationConfig": {
+                "temperature": 0.1,
+                "maxOutputTokens": 1,
+                "responseMimeType": "text/plain"
+            }
+        }
+
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                resp = await client.get(url)
+                resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
-                    data = resp.json()
-                    models = []
-                    if "models" in data:
-                        for m in data["models"]:
-                            name = m.get("name", "").replace("models/", "")
-                            if "gemini" in name:
-                                models.append(name)
-                    if not models:
-                        models = self.fallback_models
-                    else:
-                        models = list(dict.fromkeys(models))
-                    return True, "Gemini", models[:50], self.default_model
+                    return True, "Gemini"
                 elif resp.status_code in [400, 401, 403]:
-                    return False, "Invalid API Key", [], ""
+                    return False, "Invalid API Key"
                 else:
-                    return False, "Unable to connect to Gemini", [], ""
+                    return False, "Unable to connect to Gemini"
             except httpx.TimeoutException:
-                return False, "Provider Timeout", [], ""
+                return False, "Provider Timeout"
             except Exception as e:
                 logger.error(f"Gemini connection error: {e}")
-                return False, "Authentication Failed", [], ""
+                return False, "Unable to connect to Gemini"
 
     async def generate_email(
         self,
@@ -63,8 +57,9 @@ Role: {job_title}
 Key Skills: {skills}
 Job Description: {job_description}
 
-Return your response strictly as valid JSON format with keys "subject" and "body".
-Do not include any explanation or extra text outside JSON.
+Return only valid JSON with exactly two keys: "subject" and "body".
+The "body" value must be formatted as an email with a greeting, at least two paragraphs, a closing, and real newline characters (\n).
+Do not include any explanation, markdown, code fences, or extra text outside the JSON object.
 """
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],

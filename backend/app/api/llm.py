@@ -11,12 +11,11 @@ router = APIRouter(tags=["LLM Configuration"])
 class LLMConnectRequest(BaseModel):
     provider: str
     apiKey: str
+    model: str
 
 class LLMConnectResponse(BaseModel):
     success: bool
     provider: Optional[str] = ""
-    defaultModel: Optional[str] = ""
-    models: Optional[list[str]] = []
     error: Optional[str] = ""
 
 @router.post("/llm/connect", response_model=LLMConnectResponse)
@@ -28,19 +27,21 @@ async def connect_llm(payload: LLMConnectRequest):
     if not payload.apiKey or not payload.apiKey.strip():
         return LLMConnectResponse(success=False, error="API key is required")
 
+    if not payload.model or not payload.model.strip():
+        return LLMConnectResponse(success=False, error="Model is required")
+
     provider_name = payload.provider.strip()
     api_key = payload.apiKey.strip()
+    model = payload.model.strip()
 
     try:
-        provider_inst = LLMProviderFactory.create_provider(provider_name, api_key)
-        success, res_provider, models, default_model = await provider_inst.validate_connection()
+        provider_inst = LLMProviderFactory.create_provider(provider_name, api_key, model)
+        success, res_provider = await provider_inst.validate_connection()
 
         if success:
             return LLMConnectResponse(
                 success=True,
-                provider=res_provider,
-                defaultModel=default_model,
-                models=models
+                provider=res_provider
             )
         else:
             return LLMConnectResponse(

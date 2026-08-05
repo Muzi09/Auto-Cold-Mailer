@@ -22,7 +22,6 @@ export const SettingsModal: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [showApiKey, setShowApiKey] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isValidatingLlm, setIsValidatingLlm] = useState(false);
   const [llmValidationSuccess, setLlmValidationSuccess] = useState<string | null>(null);
   const [llmValidationError, setLlmValidationError] = useState<string | null>(null);
@@ -50,11 +49,6 @@ export const SettingsModal: React.FC = () => {
         setProvider(storedLlm.provider || '');
         setApiKey(storedLlm.apiKey || '');
         setSelectedModel(storedLlm.model || '');
-        if (storedLlm.models && storedLlm.models.length > 0) {
-          setAvailableModels(storedLlm.models);
-        } else if (storedLlm.model) {
-          setAvailableModels([storedLlm.model]);
-        }
         if (storedLlm.model) {
           setLlmValidationSuccess('Configured from Local Storage');
         }
@@ -80,7 +74,7 @@ export const SettingsModal: React.FC = () => {
   if (!isSettingsOpen) return null;
 
   const handleValidateLLM = async () => {
-    if (!provider || !apiKey) return;
+    if (!provider || !apiKey || !selectedModel) return;
 
     setIsValidatingLlm(true);
     setLlmValidationSuccess(null);
@@ -88,22 +82,9 @@ export const SettingsModal: React.FC = () => {
     setLlmSavedSuccess(false);
 
     try {
-      const res = await api.connectLLM(provider, apiKey);
-      if (res.success && res.models && res.models.length > 0) {
-        setAvailableModels(res.models);
-        const chosenModel = selectedModel && res.models.includes(selectedModel) ? selectedModel : (res.defaultModel || res.models[0]);
-        setSelectedModel(chosenModel);
-        setLlmValidationSuccess(`✓ Connected Successfully (${res.models.length} models fetched)`);
-
-        // Automatically store in localStorage & Zustand store
-        const autoConfig: LLMConfig = {
-          provider,
-          apiKey,
-          model: chosenModel,
-          models: res.models
-        };
-        saveStoredLLMConfig(autoConfig);
-        setLlmConfig(autoConfig);
+      const res = await api.connectLLM(provider, apiKey, selectedModel);
+      if (res.success) {
+        setLlmValidationSuccess('✓ Connected Successfully');
       } else {
         setLlmValidationError(res.error || 'Authentication Failed');
       }
@@ -116,39 +97,20 @@ export const SettingsModal: React.FC = () => {
 
   const handleModelChange = (newModel: string) => {
     setSelectedModel(newModel);
-    if (provider && apiKey && newModel) {
-      const updatedConfig: LLMConfig = {
-        provider,
-        apiKey,
-        model: newModel,
-        models: availableModels
-      };
-      saveStoredLLMConfig(updatedConfig);
-      setLlmConfig(updatedConfig);
-      setLlmSavedSuccess(true);
-      setTimeout(() => setLlmSavedSuccess(false), 2000);
-
-      addActivityLog({
-        companyName: 'Settings',
-        jobTitle: 'LLM Model Updated',
-        status: 'Completed',
-        type: 'info',
-        message: `Selected LLM model changed to '${newModel}'.`
-      });
-    }
+    setLlmValidationSuccess(null);
+    setLlmValidationError(null);
   };
 
   const handleSaveLLMConfig = () => {
     if (!provider || !apiKey || !selectedModel) {
-      alert('Please select a provider, enter API key, and validate to choose a model.');
+      alert('Please select a provider, enter API key, and provide a model.');
       return;
     }
 
     const newConfig: LLMConfig = {
       provider,
       apiKey,
-      model: selectedModel,
-      models: availableModels
+      model: selectedModel
     };
 
     saveStoredLLMConfig(newConfig);
@@ -313,9 +275,9 @@ export const SettingsModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleValidateLLM}
-                disabled={!provider || !apiKey || isValidatingLlm}
+                disabled={!provider || !apiKey || !selectedModel || isValidatingLlm}
                 className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold shadow-xs transition-all ${
-                  !provider || !apiKey || isValidatingLlm
+                  !provider || !apiKey || !selectedModel || isValidatingLlm
                     ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed'
                     : 'bg-cyan-500 hover:bg-cyan-600 text-white cursor-pointer active:scale-95'
                 }`}
@@ -326,7 +288,7 @@ export const SettingsModal: React.FC = () => {
                     <span>Connecting...</span>
                   </>
                 ) : (
-                  <span>Validate & Fetch Models</span>
+                  <span>Validate LLM Configuration</span>
                 )}
               </button>
             </div>
@@ -346,27 +308,16 @@ export const SettingsModal: React.FC = () => {
               </div>
             )}
 
-            {/* Model Dropdown */}
+            {/* Model Input */}
             <div className="space-y-1 pt-1">
               <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Model</label>
-              <select
+              <input
+                type="text"
+                placeholder="Enter model name"
                 value={selectedModel}
                 onChange={(e) => handleModelChange(e.target.value)}
-                disabled={availableModels.length === 0}
-                className={`w-full px-3 py-2 text-xs rounded-xl border transition-all ${
-                  availableModels.length === 0
-                    ? 'bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800/60 dark:text-slate-600 dark:border-slate-800 cursor-not-allowed'
-                    : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700 focus:border-cyan-500 cursor-pointer font-medium'
-                }`}
-              >
-                {availableModels.length === 0 ? (
-                  <option value="">Validate connection to fetch models</option>
-                ) : (
-                  availableModels.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))
-                )}
-              </select>
+                className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 focus:outline-none focus:border-cyan-500 font-mono transition-all"
+              />
             </div>
 
             {/* Save LLM Button */}

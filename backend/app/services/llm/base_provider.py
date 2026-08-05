@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from typing import Optional, Tuple
 
 class BaseLLMProvider(ABC):
     def __init__(self, api_key: str, model: Optional[str] = None):
@@ -7,10 +7,10 @@ class BaseLLMProvider(ABC):
         self.model = model
 
     @abstractmethod
-    async def validate_connection(self) -> Tuple[bool, str, List[str], str]:
+    async def validate_connection(self) -> Tuple[bool, str]:
         """
         Validates API key and connection.
-        Returns: (success: bool, error_or_provider: str, models: List[str], default_model: str)
+        Returns: (success: bool, error_or_provider: str)
         """
         pass
 

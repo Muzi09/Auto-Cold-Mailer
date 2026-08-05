@@ -77,7 +77,6 @@ export interface LLMConfig {
   provider: string;
   apiKey: string;
   model: string;
-  models?: string[];
 }
 
 export interface SMTPConfig {
