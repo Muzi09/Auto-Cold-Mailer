@@ -53,13 +53,16 @@ async def start_applications(payload: StartApplicationsRequest):
     if not resume_path and os.path.exists(os.path.join(UPLOAD_DIR, "resume.pdf")):
         resume_path = os.path.join(UPLOAD_DIR, "resume.pdf")
     
-    # Start background processing queue with batch SMTP config
+    llm_dict = payload.llm.model_dump() if payload.llm else None
+
+    # Start background processing queue with batch SMTP & LLM config
     all_apps = await db.get_all_applications()
     pending_apps = [app for app in all_apps if app.get("status") in ["Pending", "Failed"]]
     
     await queue_worker.add_to_queue(
         pending_apps,
         smtp_config=smtp_dict,
+        llm_config=llm_dict,
         resume_path=resume_path
     )
 

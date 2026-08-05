@@ -55,6 +55,8 @@ export const ApplicationTable: React.FC = () => {
     switch (status) {
       case 'Pending':
         return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
+      case 'Validating Email':
+        return 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 animate-pulse border border-amber-200';
       case 'Generating Subject':
       case 'Generating Email':
       case 'Sending':
@@ -65,9 +67,57 @@ export const ApplicationTable: React.FC = () => {
         return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400';
       case 'Failed':
         return 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400';
+      case 'Invalid Email':
+        return 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400 border border-rose-200';
       default:
         return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
     }
+  };
+
+  const renderValidationBadge = (app: Application) => {
+    if (app.status === 'Validating Email') {
+      return (
+        <span 
+          title="Checking syntax & domain MX records..." 
+          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200/70"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          🟡 Checking...
+        </span>
+      );
+    }
+
+    if (app.status === 'Invalid Email' || app.emailValidation?.isValid === false) {
+      const reason = app.emailValidation?.reason || app.error || 'Invalid Email';
+      return (
+        <span 
+          title={`Validation Reason: ${reason}`} 
+          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300 border border-red-200/70 cursor-help"
+        >
+          🔴 Invalid
+        </span>
+      );
+    }
+
+    if (app.emailValidation?.isValid === true || ['Generating Subject', 'Generating Email', 'Sending', 'Sent'].includes(app.status)) {
+      return (
+        <span 
+          title="Valid Email Format & MX Record Verified" 
+          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/70"
+        >
+          🟢 Valid
+        </span>
+      );
+    }
+
+    return (
+      <span 
+        title="Pending Validation" 
+        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+      >
+        ⚪ Unchecked
+      </span>
+    );
   };
 
   // Filtered and Sorted Data
@@ -147,11 +197,13 @@ export const ApplicationTable: React.FC = () => {
             >
               <option value="All">All Statuses</option>
               <option value="Pending">Pending</option>
+              <option value="Validating Email">Validating Email</option>
               <option value="Generating Subject">Generating Subject</option>
               <option value="Generating Email">Generating Email</option>
               <option value="Sending">Sending</option>
               <option value="Sent">Sent</option>
               <option value="Failed">Failed</option>
+              <option value="Invalid Email">Invalid Email</option>
             </select>
           </div>
 
@@ -201,6 +253,7 @@ export const ApplicationTable: React.FC = () => {
               </th>
               <th className="px-4 py-3">JOB TITLE</th>
               <th className="px-4 py-3">CONTACT EMAIL</th>
+              <th className="px-4 py-3">EMAIL VALIDATION</th>
               <th
                 onClick={() => toggleSort('status')}
                 className="px-4 py-3 cursor-pointer hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -218,7 +271,7 @@ export const ApplicationTable: React.FC = () => {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-800 dark:text-slate-200">
             {paginatedApps.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-slate-400 italic">
+                <td colSpan={9} className="px-4 py-8 text-center text-slate-400 italic">
                   No application records found matching criteria.
                 </td>
               </tr>
@@ -233,6 +286,7 @@ export const ApplicationTable: React.FC = () => {
                   <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-slate-100">{app.companyName}</td>
                   <td className="px-4 py-3.5 text-slate-500 dark:text-slate-400 font-medium">{app.jobTitle}</td>
                   <td className="px-4 py-3.5 font-mono text-slate-500 dark:text-slate-400 text-[11px]">{app.contactEmail}</td>
+                  <td className="px-4 py-3.5">{renderValidationBadge(app)}</td>
                   <td className="px-4 py-3.5">
                     <span className={`inline-block px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${getStatusStyle(app.status)}`}>
                       {app.status}

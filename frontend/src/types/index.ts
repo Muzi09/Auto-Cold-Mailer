@@ -1,12 +1,20 @@
 export type ApplicationStatus = 
   | 'Pending'
+  | 'Validating Email'
   | 'Generating Subject'
   | 'Generating Email'
   | 'Sending'
   | 'Sent'
   | 'Failed'
+  | 'Invalid Email'
   | 'Retrying'
   | 'Completed';
+
+export interface EmailValidationInfo {
+  isValid: boolean;
+  reason: string;
+  validatedAt?: string;
+}
 
 export interface Application {
   id?: string;
@@ -20,6 +28,7 @@ export interface Application {
   emailBody: string;
   status: ApplicationStatus;
   error?: string;
+  emailValidation?: EmailValidationInfo;
   sentAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,11 +50,14 @@ export interface LiveProgressMessage {
   total: number;
   companyName: string;
   jobTitle: string;
+  contactEmail?: string;
   status: ApplicationStatus;
   applicationId?: number;
   subject?: string;
   emailBody?: string;
   error?: string;
+  reason?: string;
+  emailValidation?: EmailValidationInfo;
   sentAt?: string;
   timestamp?: string;
 }
@@ -58,6 +70,14 @@ export interface ActivityLog {
   status: ApplicationStatus;
   type: 'info' | 'success' | 'warning' | 'error';
   message: string;
+  reason?: string;
+}
+
+export interface LLMConfig {
+  provider: string;
+  apiKey: string;
+  model: string;
+  models?: string[];
 }
 
 export interface SMTPConfig {

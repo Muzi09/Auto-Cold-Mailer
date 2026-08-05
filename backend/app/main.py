@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.database import db
-from app.api import applications, ws, settings as settings_api
+from app.api import applications, ws, settings as settings_api, llm as llm_api
 
 # Setup structured logging
 logging.basicConfig(
@@ -39,6 +39,8 @@ app.add_middleware(
 # Include API routers
 app.include_router(applications.router, prefix=settings.API_V1_STR)
 app.include_router(settings_api.router, prefix=settings.API_V1_STR)
+app.include_router(llm_api.router, prefix=settings.API_V1_STR)
+app.include_router(llm_api.router)
 app.include_router(ws.router)
 
 @app.get("/")

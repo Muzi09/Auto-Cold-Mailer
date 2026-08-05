@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { Application, UploadRow, LiveProgressMessage, ActivityLog, ApplicationStatus, SMTPConfig, ResumeData } from '../types';
-import { getStoredSMTPConfig, saveStoredSMTPConfig, getStoredResumeConfig, saveStoredResumeConfig, removeStoredResumeConfig, getStoredTheme, saveStoredTheme } from '../utils/storage';
+import { Application, UploadRow, LiveProgressMessage, ActivityLog, ApplicationStatus, SMTPConfig, ResumeData, LLMConfig } from '../types';
+import { getStoredSMTPConfig, saveStoredSMTPConfig, getStoredResumeConfig, saveStoredResumeConfig, removeStoredResumeConfig, getStoredTheme, saveStoredTheme, getStoredLLMConfig, saveStoredLLMConfig } from '../utils/storage';
 
 interface AppState {
   parsedRows: UploadRow[];
@@ -13,6 +13,7 @@ interface AppState {
   selectedApplication: Application | null;
   isSettingsOpen: boolean;
   isDetailsOpen: boolean;
+  llmConfig: LLMConfig | null;
   smtpConfig: SMTPConfig | null;
   resumeConfig: ResumeData | null;
 
@@ -36,6 +37,7 @@ interface AppState {
   setSelectedApplication: (app: Application | null) => void;
   setIsSettingsOpen: (isOpen: boolean) => void;
   setIsDetailsOpen: (isOpen: boolean) => void;
+  setLlmConfig: (config: LLMConfig | null) => void;
   setSmtpConfig: (config: SMTPConfig | null) => void;
   setResumeConfig: (config: ResumeData | null) => void;
 }
@@ -51,6 +53,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedApplication: null,
   isSettingsOpen: false,
   isDetailsOpen: false,
+  llmConfig: getStoredLLMConfig(),
   smtpConfig: getStoredSMTPConfig(),
   resumeConfig: getStoredResumeConfig(),
 
@@ -115,6 +118,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedApplication: (app) => set({ selectedApplication: app, isDetailsOpen: !!app }),
   setIsSettingsOpen: (isOpen) => set({ isSettingsOpen: isOpen }),
   setIsDetailsOpen: (isOpen) => set({ isDetailsOpen: isOpen, selectedApplication: isOpen ? get().selectedApplication : null }),
+
+  setLlmConfig: (config) => {
+    if (config) {
+      saveStoredLLMConfig(config);
+    }
+    set({ llmConfig: config });
+  },
 
   setSmtpConfig: (config) => {
     if (config) {

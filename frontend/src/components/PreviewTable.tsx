@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Play, Trash2, Building2, Briefcase, Mail, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { api } from '../services/api';
-import { getStoredSMTPConfig, getStoredResumeConfig } from '../utils/storage';
+import { getStoredSMTPConfig, getStoredResumeConfig, getStoredLLMConfig } from '../utils/storage';
 
 export const PreviewTable: React.FC = () => {
-  const { parsedRows, removeParsedRow, clearParsedRows, setApplications, addActivityLog, smtpConfig, setIsSettingsOpen } = useAppStore();
+  const { parsedRows, removeParsedRow, clearParsedRows, setApplications, addActivityLog, smtpConfig, llmConfig, setIsSettingsOpen } = useAppStore();
   const [isApplying, setIsApplying] = useState(false);
 
   if (parsedRows.length === 0) return null;
@@ -15,11 +15,17 @@ export const PreviewTable: React.FC = () => {
   const hasErrors = parsedRows.some(r => !r.companyName || !r.jobTitle || !r.contactEmail);
 
   const handleStartCampaign = async () => {
-    // Read SMTP config from store or localStorage
-    const currentSmtp = smtpConfig || getStoredSMTPConfig();
+    const currentSmtp = getStoredSMTPConfig() || smtpConfig;
+    const currentLlm = getStoredLLMConfig() || llmConfig;
 
     if (!currentSmtp?.smtpHost || !currentSmtp?.smtpUser || !currentSmtp?.smtpPassword) {
       alert('SMTP settings are incomplete. Please configure your SMTP server credentials in Settings.');
+      setIsSettingsOpen(true);
+      return;
+    }
+
+    if (!currentLlm?.provider || !currentLlm?.apiKey || !currentLlm?.model) {
+      alert('LLM Provider configuration is incomplete. Please configure your LLM Provider, API Key, and Model in Settings.');
       setIsSettingsOpen(true);
       return;
     }
@@ -34,7 +40,7 @@ export const PreviewTable: React.FC = () => {
       // Get stored Base64 resume if available
       const storedResume = getStoredResumeConfig();
 
-      const response = await api.startApplications(validRows, currentSmtp, storedResume);
+      const response = await api.startApplications(validRows, currentSmtp, currentLlm, storedResume);
 
       addActivityLog({
         companyName: 'Campaign',

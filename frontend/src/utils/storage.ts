@@ -1,7 +1,39 @@
-import { SMTPConfig, ResumeData } from '../types';
+import { SMTPConfig, ResumeData, LLMConfig } from '../types';
 
+const LLM_STORAGE_KEY = 'llmConfiguration';
 const SMTP_STORAGE_KEY = 'auto_cold_mailer_smtp_config';
 const RESUME_STORAGE_KEY = 'auto_cold_mailer_resume_config';
+
+export const getStoredLLMConfig = (): LLMConfig | null => {
+  try {
+    const raw = localStorage.getItem(LLM_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.provider && parsed.apiKey && parsed.model) {
+      return parsed;
+    }
+    return null;
+  } catch (e) {
+    console.error('Failed to parse stored LLM config:', e);
+    return null;
+  }
+};
+
+export const saveStoredLLMConfig = (config: LLMConfig): void => {
+  try {
+    localStorage.setItem(LLM_STORAGE_KEY, JSON.stringify(config));
+  } catch (e) {
+    console.error('Failed to save LLM config to localStorage:', e);
+  }
+};
+
+export const removeStoredLLMConfig = (): void => {
+  try {
+    localStorage.removeItem(LLM_STORAGE_KEY);
+  } catch (e) {
+    console.error('Failed to remove LLM config from localStorage:', e);
+  }
+};
 
 export const getStoredSMTPConfig = (): SMTPConfig | null => {
   try {

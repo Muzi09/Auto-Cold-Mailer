@@ -1,14 +1,15 @@
 import React from 'react';
-import { Mail, Clock, RefreshCw, Check, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Mail, Clock, RefreshCw, Check, AlertTriangle, TrendingUp, ShieldCheck, ShieldAlert, ZapOff } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export const StatsCards: React.FC = () => {
   const { applications } = useAppStore();
 
   const total = applications.length;
-  const pending = applications.filter(a => a.status === 'Pending').length;
+  const invalidEmails = applications.filter(a => a.status === 'Invalid Email' || a.emailValidation?.isValid === false).length;
+  const validatedEmails = applications.filter(a => a.emailValidation?.isValid === true || ['Generating Subject', 'Generating Email', 'Sending', 'Sent'].includes(a.status)).length;
   const processing = applications.filter(a => 
-    ['Generating Subject', 'Generating Email', 'Sending', 'Retrying'].includes(a.status)
+    ['Validating Email', 'Generating Subject', 'Generating Email', 'Sending', 'Retrying'].includes(a.status)
   ).length;
   const sent = applications.filter(a => a.status === 'Sent').length;
   const failed = applications.filter(a => a.status === 'Failed').length;
@@ -25,19 +26,19 @@ export const StatsCards: React.FC = () => {
       bottomBar: 'bg-blue-500'
     },
     {
-      title: 'Pending Queue',
-      value: pending,
-      icon: Clock,
-      valColor: 'text-orange-500 dark:text-orange-400',
-      bottomBar: 'bg-orange-500'
+      title: 'Validated Emails',
+      value: validatedEmails,
+      icon: ShieldCheck,
+      valColor: 'text-emerald-600 dark:text-emerald-400',
+      bottomBar: 'bg-emerald-500'
     },
     {
-      title: 'Processing Active',
-      value: processing,
-      icon: RefreshCw,
-      valColor: 'text-purple-600 dark:text-purple-400',
-      animateIcon: processing > 0,
-      bottomBar: 'bg-purple-500'
+      title: 'Invalid (Skipped)',
+      value: invalidEmails,
+      icon: ShieldAlert,
+      valColor: 'text-amber-600 dark:text-amber-400',
+      bottomBar: 'bg-amber-500',
+      subtitle: `${invalidEmails} LLM/SMTP saved`
     },
     {
       title: 'Successfully Sent',
@@ -76,7 +77,7 @@ export const StatsCards: React.FC = () => {
                 {card.title}
               </span>
               <div className="p-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-slate-400 dark:text-slate-400">
-                <Icon className={`w-3.5 h-3.5 ${card.animateIcon ? 'animate-spin' : ''}`} />
+                <Icon className="w-3.5 h-3.5" />
               </div>
             </div>
 

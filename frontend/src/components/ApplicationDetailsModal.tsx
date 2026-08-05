@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Mail, Building2, Briefcase, Code, Clock, AlertTriangle } from 'lucide-react';
+import { X, Copy, Check, Mail, Building2, Briefcase, Code, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 
 export const ApplicationDetailsModal: React.FC = () => {
@@ -57,6 +57,31 @@ export const ApplicationDetailsModal: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Email Validation Details */}
+        {selectedApplication.emailValidation && (
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+              <span>Email Validation Details</span>
+            </label>
+            <div className={`p-3 rounded-xl border text-xs font-medium flex items-center justify-between ${
+              selectedApplication.emailValidation.isValid
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+            }`}>
+              <div className="flex items-center gap-2">
+                <span>{selectedApplication.emailValidation.isValid ? '🟢 Valid Email' : '🔴 Invalid Email'}</span>
+                <span className="opacity-80">• {selectedApplication.emailValidation.reason}</span>
+              </div>
+              {selectedApplication.emailValidation.validatedAt && (
+                <span className="font-mono text-[10px] opacity-70">
+                  {new Date(selectedApplication.emailValidation.validatedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Target Skills */}
         {selectedApplication.skills && (

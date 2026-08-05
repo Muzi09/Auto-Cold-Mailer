@@ -1,11 +1,28 @@
-import { Application, UploadRow, Settings, SMTPConfig, ResumeData } from '../types';
+import { Application, UploadRow, Settings, SMTPConfig, ResumeData, LLMConfig } from '../types';
 
 const API_BASE = '/api';
 
 export const api = {
+  connectLLM: async (
+    provider: string,
+    apiKey: string
+  ): Promise<{ success: boolean; provider?: string; defaultModel?: string; models?: string[]; error?: string }> => {
+    const res = await fetch(`${API_BASE}/llm/connect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, apiKey })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Unable to connect' }));
+      return { success: false, error: err.error || err.detail || 'Unable to connect' };
+    }
+    return res.json();
+  },
+
   startApplications: async (
     rows: UploadRow[],
     smtpConfig: SMTPConfig,
+    llmConfig?: LLMConfig | null,
     resumeConfig?: ResumeData | null
   ): Promise<{ message: string; count: number }> => {
     const formattedApps = rows.map(r => ({
@@ -23,6 +40,11 @@ export const api = {
       body: JSON.stringify({
         applications: formattedApps,
         smtpConfig,
+        llm: llmConfig ? {
+          provider: llmConfig.provider,
+          apiKey: llmConfig.apiKey,
+          model: llmConfig.model
+        } : null,
         resume: resumeConfig || null
       })
     });

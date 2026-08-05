@@ -54,20 +54,31 @@ const MainDashboard: React.FC = () => {
         // Add to live activity feed
         if (msg.status && msg.companyName) {
           const typeMap: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
+            'Validating Email': 'info',
             'Generating Subject': 'info',
             'Generating Email': 'info',
             'Sending': 'warning',
+            'Sending Email': 'warning',
             'Sent': 'success',
             'Failed': 'error',
+            'Invalid Email': 'error',
             'Completed': 'success'
           };
+
+          let logMsg = `${msg.status}: ${msg.companyName}`;
+          if (msg.status === 'Invalid Email' && (msg.reason || msg.error)) {
+            logMsg = `Invalid Email: ${msg.companyName} - ${msg.reason || msg.error}`;
+          } else if (msg.status === 'Validating Email' && msg.contactEmail) {
+            logMsg = `Validating Email: ${msg.companyName} (${msg.contactEmail})`;
+          }
 
           addActivityLog({
             companyName: msg.companyName,
             jobTitle: msg.jobTitle,
             status: msg.status,
             type: typeMap[msg.status] || 'info',
-            message: `${msg.status}: ${msg.companyName} (${msg.jobTitle})`
+            message: logMsg,
+            reason: msg.reason || msg.error
           });
         }
       },
