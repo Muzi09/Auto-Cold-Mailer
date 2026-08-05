@@ -55,7 +55,7 @@ export const ActivityFeed: React.FC = () => {
             return (
               <div
                 key={log.id}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5 hover:bg-slate-800/80 transition-colors"
+                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start gap-2.5 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors"
               >
                 <div className={`p-1.5 rounded-lg ${bg} flex-shrink-0 mt-0.5`}>
                   <Icon className="w-3.5 h-3.5" />

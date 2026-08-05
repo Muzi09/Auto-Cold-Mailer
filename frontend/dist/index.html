@@ -1,7 +1,19 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('auto_cold_mailer_theme') || 'dark';
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Auto Cold Mailer - AI-Powered Job Application Platform</title>
@@ -9,10 +21,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-raw1XLjl.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-YfA_nR26.css">
+    <script type="module" crossorigin src="/assets/index-_aRK01Rp.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DIevpQou.css">
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 min-h-screen">
+  <body class="font-sans antialiased min-h-screen">
     <div id="root"></div>
   </body>
 </html>
