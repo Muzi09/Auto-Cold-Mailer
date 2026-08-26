@@ -8,9 +8,17 @@ export class WebSocketClient {
   private reconnectTimer: any = null;
 
   constructor() {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    this.url = `${protocol}//${host}/ws/progress`;
+    const meta = import.meta as any;
+    const envWsUrl = meta.env?.VITE_WS_URL;
+    if (envWsUrl) {
+      this.url = envWsUrl;
+    } else if (meta.env?.PROD) {
+      this.url = 'wss://auto-cold-mailer.onrender.com/ws/progress';
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      this.url = `${protocol}//${host}/ws/progress`;
+    }
   }
 
   public connect(
