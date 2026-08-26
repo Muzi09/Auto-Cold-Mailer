@@ -8,6 +8,7 @@ export type ApplicationStatus =
   | 'Failed'
   | 'Invalid Email'
   | 'Retrying'
+  | 'Stopped'
   | 'Completed';
 
 export interface EmailValidationInfo {
@@ -57,6 +58,8 @@ export interface LiveProgressMessage {
   emailBody?: string;
   error?: string;
   reason?: string;
+  stopReason?: string;
+  isQueueStopped?: boolean;
   emailValidation?: EmailValidationInfo;
   sentAt?: string;
   timestamp?: string;

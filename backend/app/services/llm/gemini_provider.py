@@ -3,6 +3,7 @@ import logging
 import httpx
 from typing import Optional, Tuple
 from app.services.llm.base_provider import BaseLLMProvider
+from app.services.exceptions import LLMTokenLimitError
 
 logger = logging.getLogger("auto_cold_mailer")
 
@@ -77,6 +78,9 @@ Do not include any explanation, markdown, code fences, or extra text outside the
                     resp = await client.post(url, json=payload)
 
                 if resp.status_code != 200:
+                    err_txt = resp.text.lower()
+                    if resp.status_code == 429 or "resource_exhausted" in err_txt or "quota" in err_txt or "rate limit" in err_txt:
+                        raise LLMTokenLimitError(f"Gemini LLM token/rate limit reached (429): {resp.text[:200]}")
                     err_msg = f"Gemini API error {resp.status_code}: {resp.text[:200]}"
                     logger.error(err_msg)
                     raise Exception(err_msg)

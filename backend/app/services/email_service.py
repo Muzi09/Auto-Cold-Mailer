@@ -4,6 +4,7 @@ import os
 import aiosmtplib
 from email.message import EmailMessage
 from typing import Optional, List, Dict, Any
+from app.services.exceptions import SMTPSendingLimitError, is_smtp_limit_error
 
 logger = logging.getLogger("auto_cold_mailer")
 
@@ -71,6 +72,9 @@ class EmailService:
 
             except Exception as e:
                 logger.warning(f"Failed to send email to {to_email} on attempt {attempt}: {e}")
+                if is_smtp_limit_error(e):
+                    logger.error(f"SMTP sending limit detected for {to_email}: {e}")
+                    raise SMTPSendingLimitError(f"SMTP email sending limit reached: {e}")
                 if attempt < max_retries:
                     await asyncio.sleep(delay)
                     delay *= 2.0  # Exponential backoff: 2s, 4s, 8s

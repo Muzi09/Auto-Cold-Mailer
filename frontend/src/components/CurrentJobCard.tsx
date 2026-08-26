@@ -38,6 +38,12 @@ export const CurrentJobCard: React.FC = () => {
           bg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300',
           icon: CheckCircle2
         };
+      case 'Stopped':
+        return {
+          label: 'Queue Stopped',
+          bg: 'bg-red-500 text-white dark:bg-red-600 dark:text-white font-bold',
+          icon: AlertTriangle
+        };
       case 'Failed':
         return {
           label: 'Failed',
@@ -77,7 +83,7 @@ export const CurrentJobCard: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${badge.bg}`}>
-            <StatusIcon className="w-3.5 h-3.5 animate-spin" />
+            <StatusIcon className={`w-3.5 h-3.5 ${liveProgress.status === 'Stopped' || liveProgress.status === 'Failed' || liveProgress.status === 'Sent' ? '' : 'animate-spin'}`} />
             <span>{badge.label}</span>
           </div>
           <span className="text-xs font-mono text-slate-400">{liveProgress.timestamp || new Date().toLocaleTimeString()}</span>
@@ -93,7 +99,14 @@ export const CurrentJobCard: React.FC = () => {
           </div>
         )}
 
-        {liveProgress.subject && (
+        {liveProgress.error && (
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+            <span className="font-bold block mb-1">Queue Status Message:</span>
+            <span className="font-medium">{liveProgress.error}</span>
+          </div>
+        )}
+
+        {liveProgress.subject && !liveProgress.error && (
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-xs">
             <span className="font-bold text-slate-500 dark:text-slate-400 block mb-1">Generated Subject:</span>
             <span className="text-cyan-600 dark:text-cyan-400 font-mono font-bold">{liveProgress.subject}</span>

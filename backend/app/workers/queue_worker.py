@@ -8,6 +8,7 @@ from app.services.email_service import email_service
 from app.services.ws_manager import ws_manager
 from app.services.email_validator_service import email_validator_service
 from app.services.llm.factory import LLMProviderFactory
+from app.services.exceptions import is_llm_token_limit_error, is_smtp_limit_error
 
 logger = logging.getLogger("auto_cold_mailer")
 
@@ -49,6 +50,7 @@ class QueueWorker:
 
     async def _process_queue(self):
         self.is_processing = True
+        is_stopped = False
         logger.info(f"Starting queue processing for {self.queue.qsize()} applications...")
 
         while not self.queue.empty():
@@ -154,8 +156,6 @@ class QueueWorker:
                     })
                     continue
 
-
-
                 await db.update_application(app_id, {
                     "subject": subject,
                     "emailBody": email_body,
@@ -219,35 +219,97 @@ class QueueWorker:
 
             except Exception as e:
                 logger.error(f"Error processing application {app_id} for {company_name}: {e}")
-                err_msg = str(e)
-                await db.update_application(app_id, {
-                    "status": "Failed",
-                    "error": err_msg
-                })
-                await ws_manager.broadcast({
-                    "current": self.processed_count,
-                    "total": self.total_count,
-                    "companyName": company_name,
-                    "jobTitle": job_title,
-                    "status": "Failed",
-                    "error": err_msg,
-                    "applicationId": app_id
-                })
+                
+                # Check for critical limit errors: LLM token limit or SMTP sending limit
+                is_llm_limit = is_llm_token_limit_error(e)
+                is_smtp_limit = is_smtp_limit_error(e)
+
+                if is_llm_limit or is_smtp_limit:
+                    is_stopped = True
+                    if is_llm_limit:
+                        stop_reason = "LLM Token Limit Reached"
+                        user_msg = f"Queue stopped: LLM token/rate limit reached. Remaining items were not processed. ({str(e)})"
+                    else:
+                        stop_reason = "SMTP Email Sending Limit Triggered"
+                        user_msg = f"Queue stopped: SMTP email sending limit reached. Remaining items were not processed. ({str(e)})"
+                    
+                    logger.error(f"CRITICAL LIMIT ERROR - Halting Queue: {user_msg}")
+
+                    # 1. Update current application status
+                    await db.update_application(app_id, {
+                        "status": "Failed",
+                        "error": user_msg
+                    })
+
+                    # 2. Drain all remaining items from queue so they are NOT processed
+                    remaining_count = 0
+                    while not self.queue.empty():
+                        try:
+                            rem_app = self.queue.get_nowait()
+                            self.queue.task_done()
+                            remaining_count += 1
+                            rem_id = rem_app.get("applicationId")
+                            if rem_id:
+                                await db.update_application(rem_id, {
+                                    "status": "Pending",
+                                    "error": f"Queue processing halted: {stop_reason}"
+                                })
+                        except asyncio.QueueEmpty:
+                            break
+
+                    logger.info(f"Drained {remaining_count} remaining items from processing queue.")
+
+                    # 3. Broadcast WS message notifying UI that queue stopped
+                    await ws_manager.broadcast({
+                        "current": self.processed_count,
+                        "total": self.total_count,
+                        "companyName": company_name,
+                        "jobTitle": job_title,
+                        "status": "Stopped",
+                        "stopReason": stop_reason,
+                        "error": user_msg,
+                        "applicationId": app_id,
+                        "isQueueStopped": True
+                    })
+                    
+                    self.queue.task_done()
+                    break
+
+                else:
+                    # Generic application failure (continue queue)
+                    err_msg = str(e)
+                    await db.update_application(app_id, {
+                        "status": "Failed",
+                        "error": err_msg
+                    })
+                    await ws_manager.broadcast({
+                        "current": self.processed_count,
+                        "total": self.total_count,
+                        "companyName": company_name,
+                        "jobTitle": job_title,
+                        "status": "Failed",
+                        "error": err_msg,
+                        "applicationId": app_id
+                    })
             
             finally:
-                self.queue.task_done()
-                await asyncio.sleep(0.3)
+                if not is_stopped:
+                    self.queue.task_done()
+                    await asyncio.sleep(0.3)
 
         self.is_processing = False
         self.current_app_id = None
-        logger.info("Sequential queue processing completed.")
         
-        await ws_manager.broadcast({
-            "current": self.total_count,
-            "total": self.total_count,
-            "companyName": "All Applications",
-            "jobTitle": "Batch Completed",
-            "status": "Completed"
-        })
+        if not is_stopped:
+            logger.info("Sequential queue processing completed.")
+            await ws_manager.broadcast({
+                "current": self.total_count,
+                "total": self.total_count,
+                "companyName": "All Applications",
+                "jobTitle": "Batch Completed",
+                "status": "Completed"
+            })
+        else:
+            logger.warning("Sequential queue processing stopped due to limit error.")
 
 queue_worker = QueueWorker()

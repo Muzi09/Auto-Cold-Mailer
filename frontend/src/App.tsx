@@ -10,6 +10,7 @@ import { ActivityFeed } from './components/ActivityFeed';
 import { ApplicationTable } from './components/ApplicationTable';
 import { ApplicationDetailsModal } from './components/ApplicationDetailsModal';
 import { SettingsModal } from './components/SettingsModal';
+import { QueueStoppedBanner } from './components/QueueStoppedBanner';
 import { useAppStore } from './store/useAppStore';
 import { wsClient } from './services/ws';
 import { api } from './services/api';
@@ -24,6 +25,7 @@ const MainDashboard: React.FC = () => {
     setWsConnected,
     updateApplicationState,
     addActivityLog,
+    setIsApplying,
     theme,
     setTheme
   } = useAppStore();
@@ -41,6 +43,12 @@ const MainDashboard: React.FC = () => {
     wsClient.connect(
       (msg) => {
         setLiveProgress(msg);
+
+        if (msg.status === 'Stopped' || msg.isQueueStopped) {
+          setIsApplying(false);
+          // Refresh applications to reflect skipped remaining items
+          api.getApplications().then(setApplications).catch(console.error);
+        }
 
         if (msg.applicationId && msg.status) {
           updateApplicationState(msg.applicationId, msg.status, {
@@ -62,11 +70,14 @@ const MainDashboard: React.FC = () => {
             'Sent': 'success',
             'Failed': 'error',
             'Invalid Email': 'error',
+            'Stopped': 'error',
             'Completed': 'success'
           };
 
           let logMsg = `${msg.status}: ${msg.companyName}`;
-          if (msg.status === 'Invalid Email' && (msg.reason || msg.error)) {
+          if (msg.status === 'Stopped' || msg.isQueueStopped) {
+            logMsg = `Queue Stopped (${msg.stopReason || 'Limit Exceeded'}): ${msg.error || 'Remaining items were skipped.'}`;
+          } else if (msg.status === 'Invalid Email' && (msg.reason || msg.error)) {
             logMsg = `Invalid Email: ${msg.companyName} - ${msg.reason || msg.error}`;
           } else if (msg.status === 'Validating Email' && msg.contactEmail) {
             logMsg = `Validating Email: ${msg.companyName} (${msg.contactEmail})`;
@@ -106,6 +117,9 @@ const MainDashboard: React.FC = () => {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
+        {/* Top Queue Stopped Alert Banner */}
+        <QueueStoppedBanner />
+
         {/* Top Metric Cards */}
         <StatsCards />
 

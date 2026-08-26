@@ -3,6 +3,7 @@ import logging
 import httpx
 from typing import Optional, Tuple
 from app.services.llm.base_provider import BaseLLMProvider
+from app.services.exceptions import LLMTokenLimitError
 
 logger = logging.getLogger("auto_cold_mailer")
 
@@ -103,6 +104,9 @@ Do not include any explanation, markdown, code fences, or extra text outside the
                     resp = await client.post(f"{self.base_url}/chat/completions", headers=headers, json=payload)
 
                 if resp.status_code != 200:
+                    err_txt = resp.text.lower()
+                    if resp.status_code == 429 or "rate_limit" in err_txt or "quota" in err_txt or "token limit" in err_txt:
+                        raise LLMTokenLimitError(f"{self.provider_name} token/rate limit reached (429): {resp.text[:200]}")
                     err_msg = f"{self.provider_name} API Error {resp.status_code}: {resp.text[:200]}"
                     logger.error(err_msg)
                     raise Exception(err_msg)
