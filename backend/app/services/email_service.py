@@ -8,6 +8,7 @@ from app.services.exceptions import SMTPSendingLimitError, is_smtp_limit_error
 
 logger = logging.getLogger("auto_cold_mailer")
 
+
 class EmailService:
     @staticmethod
     async def send_email_with_retry(
@@ -23,7 +24,7 @@ class EmailService:
         Retries up to max_retries with exponential backoff.
         """
         smtp_host = smtp_config.get("smtpHost")
-        smtp_port = int(smtp_config.get("smtpPort", 587))
+        smtp_port = int(smtp_config.get("smtpPort", 465))
         smtp_user = smtp_config.get("smtpUser")
         smtp_password = smtp_config.get("smtpPassword")
         from_email = smtp_config.get("smtpFromEmail") or smtp_user
@@ -31,13 +32,15 @@ class EmailService:
         use_tls = smtp_config.get("useTls", True)
 
         if not smtp_host or not smtp_user or not smtp_password:
-            raise ValueError("Incomplete SMTP credentials provided in request.")
+            raise ValueError(
+                "Incomplete SMTP credentials provided in request.")
 
         delay = 2.0
         for attempt in range(1, max_retries + 1):
             try:
-                logger.info(f"Attempting SMTP send to {to_email} via {smtp_host}:{smtp_port} (Attempt {attempt}/{max_retries})...")
-                
+                logger.info(
+                    f"Attempting SMTP send to {to_email} via {smtp_host}:{smtp_port} (Attempt {attempt}/{max_retries})...")
+
                 message = EmailMessage()
                 message["From"] = f"{from_name} <{from_email}>"
                 message["To"] = to_email
@@ -71,16 +74,21 @@ class EmailService:
                 return True
 
             except Exception as e:
-                logger.warning(f"Failed to send email to {to_email} on attempt {attempt}: {e}")
+                logger.warning(
+                    f"Failed to send email to {to_email} on attempt {attempt}: {e}")
                 if is_smtp_limit_error(e):
-                    logger.error(f"SMTP sending limit detected for {to_email}: {e}")
-                    raise SMTPSendingLimitError(f"SMTP email sending limit reached: {e}")
+                    logger.error(
+                        f"SMTP sending limit detected for {to_email}: {e}")
+                    raise SMTPSendingLimitError(
+                        f"SMTP email sending limit reached: {e}")
                 if attempt < max_retries:
                     await asyncio.sleep(delay)
                     delay *= 2.0  # Exponential backoff: 2s, 4s, 8s
                 else:
-                    logger.error(f"Exhausted all retries for sending email to {to_email}: {e}")
+                    logger.error(
+                        f"Exhausted all retries for sending email to {to_email}: {e}")
                     raise e
         return False
+
 
 email_service = EmailService()

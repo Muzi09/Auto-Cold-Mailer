@@ -31,7 +31,7 @@ export const SettingsModal: React.FC = () => {
 
   // SMTP Config State
   const [smtpHost, setSmtpHost] = useState('smtp.gmail.com');
-  const [smtpPort, setSmtpPort] = useState(587);
+  const [smtpPort, setSmtpPort] = useState(465);
   const [smtpUser, setSmtpUser] = useState('');
   const [smtpPassword, setSmtpPassword] = useState('');
   const [smtpFromEmail, setSmtpFromEmail] = useState('');
@@ -61,7 +61,7 @@ export const SettingsModal: React.FC = () => {
       const storedSmtp = getStoredSMTPConfig();
       if (storedSmtp) {
         setSmtpHost(storedSmtp.smtpHost || 'smtp.gmail.com');
-        setSmtpPort(storedSmtp.smtpPort || 587);
+        setSmtpPort(storedSmtp.smtpPort || 465);
         setSmtpUser(storedSmtp.smtpUser || '');
         setSmtpPassword(storedSmtp.smtpPassword || '');
         setSmtpFromEmail(storedSmtp.smtpFromEmail || '');
@@ -153,7 +153,7 @@ export const SettingsModal: React.FC = () => {
       // Save SMTP Config
       const smtpObj: SMTPConfig = {
         smtpHost,
-        smtpPort: Number(smtpPort) || 587,
+        smtpPort: Number(smtpPort) || 465,
         smtpUser,
         smtpPassword,
         smtpFromEmail: smtpFromEmail || smtpUser,
@@ -191,9 +191,9 @@ export const SettingsModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">
-      
+
       <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-100 dark:border-slate-800 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
-        
+
         {/* Close Button */}
         <button
           onClick={() => setIsSettingsOpen(false)}
@@ -232,7 +232,7 @@ export const SettingsModal: React.FC = () => {
           </p>
 
           <div className="space-y-3.5 pt-1">
-            
+
             {/* Provider Dropdown */}
             <div className="space-y-1">
               <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Provider</label>
@@ -288,11 +288,10 @@ export const SettingsModal: React.FC = () => {
                 type="button"
                 onClick={handleValidateLLM}
                 disabled={!provider || !apiKey.trim() || isValidatingLlm}
-                className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold shadow-xs transition-all ${
-                  !provider || !apiKey.trim() || isValidatingLlm
+                className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold shadow-xs transition-all ${!provider || !apiKey.trim() || isValidatingLlm
                     ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed'
                     : 'bg-cyan-500 hover:bg-cyan-600 text-white cursor-pointer active:scale-95'
-                }`}
+                  }`}
               >
                 {isValidatingLlm ? (
                   <>
@@ -373,11 +372,10 @@ export const SettingsModal: React.FC = () => {
                 type="button"
                 onClick={handleSaveLLMConfig}
                 disabled={!provider || !apiKey.trim() || !selectedModel.trim()}
-                className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                  !provider || !apiKey.trim() || !selectedModel.trim()
+                className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all ${!provider || !apiKey.trim() || !selectedModel.trim()
                     ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed'
                     : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 cursor-pointer active:scale-95'
-                }`}
+                  }`}
               >
                 Save Configuration
               </button>
@@ -416,7 +414,7 @@ export const SettingsModal: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  placeholder="587"
+                  placeholder="465"
                   value={smtpPort}
                   onChange={(e) => setSmtpPort(Number(e.target.value))}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50/80 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700/80 focus:outline-none focus:border-cyan-500 font-mono transition-all"
@@ -486,7 +484,7 @@ export const SettingsModal: React.FC = () => {
             <Paperclip className="w-3.5 h-3.5 text-cyan-500" />
             <span>Upload Resume PDF Attachment</span>
           </label>
-          
+
           <div>
             <input
               type="file"
@@ -495,7 +493,7 @@ export const SettingsModal: React.FC = () => {
               className="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#1E293B] file:text-white hover:file:bg-slate-800 cursor-pointer"
             />
           </div>
-          
+
           {uploadStatus && (
             <p className="text-xs text-emerald-500 dark:text-emerald-400 flex items-center gap-1.5 font-semibold pt-1">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
