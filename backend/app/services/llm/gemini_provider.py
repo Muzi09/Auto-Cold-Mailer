@@ -1,7 +1,7 @@
 import json
 import logging
 import httpx
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 from app.services.llm.base_provider import BaseLLMProvider
 from app.services.exceptions import LLMTokenLimitError
 
@@ -11,33 +11,42 @@ class GeminiProvider(BaseLLMProvider):
     def __init__(self, api_key: str, model: Optional[str] = None):
         super().__init__(api_key, model or "gemini-1.5-flash")
         self.default_model = "gemini-1.5-flash"
+        self.fallback_models = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-1.0-pro"
+        ]
 
-    async def validate_connection(self) -> Tuple[bool, str]:
-        model_name = self.model or self.default_model
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
-        payload = {
-            "contents": [{"parts": [{"text": "ping"}]}],
-            "generationConfig": {
-                "temperature": 0.1,
-                "maxOutputTokens": 1,
-                "responseMimeType": "text/plain"
-            }
-        }
+    async def validate_connection(self) -> Tuple[bool, str, List[str]]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={self.api_key}"
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             try:
-                resp = await client.post(url, json=payload)
+                resp = await client.get(url)
                 if resp.status_code == 200:
-                    return True, "Gemini"
+                    res_json = resp.json()
+                    models: List[str] = []
+                    for m in res_json.get("models", []):
+                        methods = m.get("supportedGenerationMethods", [])
+                        name = m.get("name", "")
+                        if "generateContent" in methods:
+                            clean_name = name.replace("models/", "").strip()
+                            if clean_name and "embedding" not in clean_name.lower() and "aqa" not in clean_name.lower():
+                                models.append(clean_name)
+
+                    if not models:
+                        models = self.fallback_models
+                    return True, "Gemini", models
                 elif resp.status_code in [400, 401, 403]:
-                    return False, "Invalid API Key"
+                    return False, "Invalid API Key", []
                 else:
-                    return False, "Unable to connect to Gemini"
+                    return False, "Unable to connect to Gemini", []
             except httpx.TimeoutException:
-                return False, "Provider Timeout"
+                return False, "Provider Timeout", []
             except Exception as e:
                 logger.error(f"Gemini connection error: {e}")
-                return False, "Unable to connect to Gemini"
+                return False, "Unable to connect to Gemini", []
 
     async def generate_email(
         self,
