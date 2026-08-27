@@ -1,11 +1,7 @@
 import { Application, UploadRow, Settings, SMTPConfig, ResumeData, LLMConfig } from '../types';
 
 const meta = import.meta as any;
-const API_BASE = meta.env?.VITE_API_BASE_URL || (
-  meta.env?.PROD 
-    ? 'https://auto-cold-mailer.onrender.com/api' 
-    : '/api'
-);
+const API_BASE = 'https://auto-cold-mailer.onrender.com/api'
 
 export const api = {
   connectLLM: async (
