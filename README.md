@@ -1,6 +1,6 @@
 # AI-Powered Cold Email Job Application Platform
 
-An enterprise-grade, scalable full-stack web application designed to automate personalized cold email job applications using **OpenAI**, **FastAPI**, **Motor/MongoDB**, and **React 19 + TypeScript + Vite**.
+An enterprise-grade, scalable full-stack web application designed to automate personalized cold email job applications using **OpenAI**, **FastAPI**, **MongoDB**, and **React 19 + TypeScript + Vite**.
 
 Featuring an **Apple Human Interface** aesthetic with frosted glass elements, smooth micro-animations, real-time WebSocket progress updates, browser-side Excel parsing, and resilient SMTP sending queues with exponential retries.
 
